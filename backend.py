@@ -1,8 +1,7 @@
+import streamlit as st
 import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
-from pathlib import Path
-from datetime import datetime
 import os
 
 load_dotenv()
@@ -12,12 +11,29 @@ load_dotenv()
 # ==============================================================================
 
 def get_connection():
+    # Step 1: Try to securely read Streamlit Cloud secrets first.
+    # If they don't exist (because you are testing on your laptop), fallback to os.getenv
+    try:
+        db_host = st.secrets["MYSQL_HOST"]
+        db_user = st.secrets["MYSQL_USER"]
+        db_pass = st.secrets["MYSQL_PASSWORD"]
+        db_name = st.secrets["MYSQL_DATABASE"]
+        db_port = int(st.secrets["MYSQL_PORT"])
+    except (FileNotFoundError, KeyError):
+        db_host = os.getenv("MYSQL_HOST", "localhost")
+        db_user = os.getenv("MYSQL_USER")
+        db_pass = os.getenv("MYSQL_PASSWORD")
+        db_name = os.getenv("MYSQL_DATABASE")
+        db_port = int(os.getenv("MYSQL_PORT", 3306))
+
+    # Step 2: Establish connection with SSL enabled (Required for Aiven)
     return mysql.connector.connect(
-        host=os.getenv("MYSQL_HOST", "localhost"),
-        user=os.getenv("MYSQL_USER"),
-        password=os.getenv("MYSQL_PASSWORD"),
-        database=os.getenv("MYSQL_DATABASE"),
-        port=int(os.getenv("MYSQL_PORT", 3306))
+        host=db_host,
+        user=db_user,
+        password=db_pass,
+        database=db_name,
+        port=db_port,
+        ssl_disabled=False  
     )
 
 def execute_query(sql, params=None, fetch=True):
@@ -31,7 +47,7 @@ def execute_query(sql, params=None, fetch=True):
 
 def execute_procedure(proc_name, params=()):
     """
-    Hàm helper riêng để gọi Stored Procedure của TV2.
+    Hàm helper riêng để gọi Stored Procedure.
     Trả về True nếu thành công, raise Error nếu thất bại.
     """
     with get_connection() as conn:
