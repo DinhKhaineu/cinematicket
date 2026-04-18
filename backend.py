@@ -78,6 +78,24 @@ def get_or_create_customer(name, phone):
     new_customer = execute_query(check_sql, (phone,))
     return new_customer[0]['CustomerID']
 
+# ==============================================================================
+# SCREENING MANAGEMENT
+# ==============================================================================
+def get_available_screenings():
+    """Fetches all screenings to populate the UI dropdown."""
+    sql = """
+        SELECT 
+            s.ScreeningID, 
+            m.MovieTitle, 
+            c.RoomName, 
+            s.ScreeningDate, 
+            s.ScreeningTime
+        FROM Screenings s
+        JOIN Movies m ON s.MovieID = m.MovieID
+        JOIN CinemaRooms c ON s.RoomID = c.RoomID
+        ORDER BY s.ScreeningDate, s.ScreeningTime
+    """
+    return execute_query(sql)
 
 # ==============================================================================
 # BOOK TICKET
