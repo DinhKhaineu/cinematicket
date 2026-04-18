@@ -41,20 +41,22 @@ if menu == "🎟️ Book Ticket":
         submit_button = st.form_submit_button("Book Ticket")
         
         if submit_button:
-            if not customer_name or not phone_number or not row_name:
+            # Added .strip() to ensure users don't just type empty spaces
+            if not customer_name.strip() or not phone_number.strip() or not row_name.strip():
                 st.warning("⚠️ Please fill in all fields (Name, Phone, and Row).")
             else:
                 # 1. Automatically get or create the Customer ID behind the scenes
-                auto_customer_id = backend.get_or_create_customer(customer_name, phone_number)
+                auto_customer_id = backend.get_or_create_customer(customer_name.strip(), phone_number.strip())
                 
                 # 2. Pass that automatic ID into your existing booking function
-                success = backend.book_ticket(auto_customer_id, screening_id, row_name, seat_number)
+                success = backend.book_ticket(auto_customer_id, screening_id, row_name.strip(), seat_number)
                 
                 if success:
-                    st.success(f"✅ Successfully booked Seat {row_name}{seat_number} for {customer_name}!")
+                    st.success(f"✅ Successfully booked Seat {row_name}{seat_number} for {customer_name.strip()}!")
                     st.balloons() 
                 else:
                     st.error("❌ Booking failed. This seat might be taken, or the layout is invalid.")
+
 # ==========================================
 # PAGE 2: REVENUE REPORT
 # ==========================================
