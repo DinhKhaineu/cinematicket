@@ -14,28 +14,6 @@ menu = st.sidebar.radio("Go to:", ["🎟️ Book Ticket", "📊 Revenue Report"]
 st.sidebar.markdown("---")
 st.sidebar.info("Data is synced directly from the MySQL Database.")
 
-# ==============================================================================
-# CUSTOMER MANAGEMENT
-# ==============================================================================
-def get_or_create_customer(name, phone):
-    """Finds a customer by phone number, or creates a new one if they don't exist."""
-    
-    # 1. Check if the customer already exists
-    check_sql = "SELECT CustomerID FROM Customers WHERE PhoneNumber = %s"
-    existing_customer = execute_query(check_sql, (phone,))
-    
-    if existing_customer:
-        # Return the ID of the existing customer
-        return existing_customer[0]['CustomerID']
-    
-    # 2. If they don't exist, create them
-    insert_sql = "INSERT INTO Customers (CustomerName, PhoneNumber) VALUES (%s, %s)"
-    execute_query(insert_sql, (name, phone), fetch=False)
-    
-    # 3. Retrieve the newly generated ID
-    new_customer = execute_query(check_sql, (phone,))
-    return new_customer[0]['CustomerID']
-
 # ==========================================
 # PAGE 1: BOOK TICKET
 # ==========================================
