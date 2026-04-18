@@ -20,35 +20,41 @@ st.sidebar.info("Data is synced directly from the MySQL Database.")
 if menu == "🎟️ Book Ticket":
     st.header("Book a New Ticket")
     
-    # We use a form so the app doesn't reload until the user clicks "Submit"
     with st.form("booking_form"):
-        st.subheader("Customer & Screening Details")
+        st.subheader("Customer Details")
         col1, col2 = st.columns(2)
-        
         with col1:
-            customer_id = st.number_input("Customer ID", min_value=1, step=1)
-            screening_id = st.number_input("Screening ID", min_value=1, step=1)
-            
+            customer_name = st.text_input("Full Name")
         with col2:
-            row_name = st.text_input("Row Name (e.g., A, B, C)", max_chars=1).upper()
+            phone_number = st.text_input("Phone Number")
+            
+        st.subheader("Screening Details")
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            # We still need the ScreeningID to know the Movie, Time, and Room
+            screening_id = st.number_input("Screening ID", min_value=1, step=1)
+        with col4:
+            row_name = st.text_input("Row (e.g., A, B, C)", max_chars=1).upper()
+        with col5:
             seat_number = st.number_input("Seat Number", min_value=1, step=1)
             
-        # The submit button
         submit_button = st.form_submit_button("Book Ticket")
         
         if submit_button:
-            if not row_name:
-                st.warning("⚠️ Please enter a Row Name.")
+            if not customer_name or not phone_number or not row_name:
+                st.warning("⚠️ Please fill in all fields (Name, Phone, and Row).")
             else:
-                # Call the function from your backend.py
-                success = backend.book_ticket(customer_id, screening_id, row_name, seat_number)
+                # 1. Automatically get or create the Customer ID behind the scenes
+                auto_customer_id = backend.get_or_create_customer(customer_name, phone_number)
+                
+                # 2. Pass that automatic ID into your existing booking function
+                success = backend.book_ticket(auto_customer_id, screening_id, row_name, seat_number)
                 
                 if success:
-                    st.success(f"✅ Successfully booked Seat {row_name}{seat_number} for Screening #{screening_id}!")
-                    st.balloons() # Fun visual effect for success
+                    st.success(f"✅ Successfully booked Seat {row_name}{seat_number} for {customer_name}!")
+                    st.balloons() 
                 else:
                     st.error("❌ Booking failed. This seat might be taken, or the layout is invalid.")
-
 # ==========================================
 # PAGE 2: REVENUE REPORT
 # ==========================================
