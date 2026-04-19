@@ -29,33 +29,46 @@ if menu == "🎟️ Book Ticket":
             phone_number = st.text_input("Phone Number")
             
         st.subheader("Screening Details")
-        col3, col4, col5 = st.columns(3)
-        with col3:
-            # We still need the ScreeningID to know the Movie, Time, and Room
-            screening_id = st.number_input("Screening ID", min_value=1, step=1)
-        with col4:
-            row_name = st.text_input("Row (e.g., A, B, C)", max_chars=1).upper()
-        with col5:
-            seat_number = st.number_input("Seat Number", min_value=1, step=1)
-            
-        submit_button = st.form_submit_button("Book Ticket")
+
+        #Fetch the data from the database 
+        available_screenings = backend.get_available_screening()
         
-        if submit_button:
-            # Added .strip() to ensure users don't just type empty spaces
-            if not customer_name.strip() or not phone_number.strip() or not row_name.strip():
-                st.warning("⚠️ Please fill in all fields (Name, Phone, and Row).")
+        #Create dictionary mapping readable labels to the actual ScreeningID
+        screening_dict = {}
+        if available_screenings:
+            for s in available_screenings:
+                label = f"{s['MovieTitle']} - {s['RoomName']} ({s['ScreeningDate']} @ {s['ScreeningTime']})"
+                screening_dict[label] = s['ScreeningID']
+        col3, col4 = st.columns([2, 1])
+        with col3: 
+            if not available_screenings:
+                st.warning("No screening available")
+                screening_id =None
             else:
-                # 1. Automatically get or create the Customer ID behind the scenes
-                auto_customer_id = backend.get_or_create_customer(customer_name.strip(), phone_number.strip())
-                
-                # 2. Pass that automatic ID into your existing booking function
-                success = backend.book_ticket(auto_customer_id, screening_id, row_name.strip(), seat_number)
-                
-                if success:
-                    st.success(f"✅ Successfully booked Seat {row_name}{seat_number} for {customer_name.strip()}!")
-                    st.balloons() 
-                else:
-                    st.error("❌ Booking failed. This seat might be taken, or the layout is invalid.")
+                selected_label = st.selectbox("Select Movie & Showtime", list(screening_dict.keys()))
+                screening_id = screening_dict[selected_label]
+        with col4:
+            row_col, seat_col = st.columns(2)
+            with row_col:
+                row_name = st.text_input("Row (e.e., A, B)", max_chars = 1).upper()
+            with seat_col: 
+                seat_number = st.number_input("Seat Number", min_value =1, step =1)
+            submit_button = st.form_submit_button("Book Ticket")
+        if submit_button:
+                    if not customer_name.strip() or not phone_number.strip() or not row_name.strip() or not screening_id:
+                        st.warning("⚠️ Please fill in all fields.")
+                    else:
+                        # 1. Automatically get or create the Customer ID
+                        auto_customer_id = backend.get_or_create_customer(customer_name.strip(), phone_number.strip())
+                        
+                        # 2. Pass the IDs into the booking function
+                        success = backend.book_ticket(auto_customer_id, screening_id, row_name.strip(), seat_number)
+                        
+                        if success:
+                            st.success(f"✅ Successfully booked Seat {row_name}{seat_number} for {customer_name.strip()}!")
+                            st.balloons() 
+                        else:
+                            st.error("❌ Booking failed. This seat might be taken, or the layout is invalid.")
 
 # ==========================================
 # PAGE 2: REVENUE REPORT
