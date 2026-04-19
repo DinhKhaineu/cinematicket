@@ -55,10 +55,11 @@ if menu == "🎟️ Book Ticket":
                 seat_number = st.number_input("Seat Number", min_value =1, step =1)
         #Submit button
         submit_button = st.form_submit_button("Book Ticket")
+       
         if submit_button:
              if not customer_name.strip() or not phone_number.strip() or not row_name.strip() or not screening_id:
                 st.warning("⚠️ Please fill in all fields.")
-            else:
+             else:
                 # 1. Automatically get or create the Customer ID
                 auto_customer_id = backend.get_or_create_customer(customer_name.strip(), phone_number.strip())
                 
