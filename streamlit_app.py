@@ -30,13 +30,18 @@ if not st.session_state["logged_in"]:
             login_pass = st.text_input("Password", type="password")
             submit_login = st.form_submit_button("Login")
     if submit_login:
-        role = backend.login(login_user.strip(), login_pass.strip())
-        if role: 
-            st.session_state["logged in"] = True
-            st.session_state["role"] = role
-            st.session_state["username"] = login_user.strip()
-            st.success(f"Welcome, {role.capitalize()}!")
-            st.rerun()
+                role = backend.login(login_user.strip(), login_pass.strip())
+                
+                # Check if the result was a valid role
+                if role in ["admin", "clerk"]:
+                    st.session_state["logged_in"] = True
+                    st.session_state["role"] = role
+                    st.session_state["username"] = login_user.strip()
+                    st.success(f"Welcome, {role.capitalize()}!")
+                    st.rerun() 
+                else:
+                    # If it wasn't a role, it was an error message. Print it!
+                    st.error(f"❌ Login Failed | {role}")
 
 # ------------------------------------------------------------------------------
 # MAIN APPLICATION (Only runs if logged in)
