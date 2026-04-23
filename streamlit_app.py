@@ -50,7 +50,7 @@ else:
     st.title("🎬 Cinema Management System")
     
     # Create a sidebar for navigation
-    st.sidebar.title(f"{session_state['username']}")
+    st.sidebar.title(f"{st.session_state['username']}")
     st.sidebar.markdown(f"**Role:** {st.session_state['role'].capitalize()}")
     
     menu_options = ["🎟️ Book Ticket"]
