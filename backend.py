@@ -1,40 +1,40 @@
-import streamlit as st
 import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
+from pathlib import Path
+from datetime import datetime
 import os
 
 load_dotenv()
 
 # ==============================================================================
-# 1. CONNECTION & HELPER
+# CONNECTION & HELPER
 # ==============================================================================
 
 def get_connection():
-    # Step 1: Try to securely read Streamlit Cloud secrets first.
-    # If they don't exist (because you are testing on your laptop), fallback to os.getenv
     try:
         db_host = st.secrets["MYSQL_HOST"]
-        db_user = st.secrets["MYSQL_USER"]
+        db_user = st.secret["MYSQL_USER"]
         db_pass = st.secrets["MYSQL_PASSWORD"]
         db_name = st.secrets["MYSQL_DATABASE"]
         db_port = int(st.secrets["MYSQL_PORT"])
     except (FileNotFoundError, KeyError):
-        db_host = os.getenv("MYSQL_HOST", "localhost")
-        db_user = os.getenv("MYSQL_USER")
-        db_pass = os.getenv("MYSQL_PASSWORD")
-        db_name = os.getenv("MYSQL_DATABASE")
-        db_port = int(os.getenv("MYSQL_PORT", 3306))
-
-    # Step 2: Establish connection with SSL enabled (Required for Aiven)
+        db_host = os.getenv("MYSQL_HOST", "local_host")
+        db_user = os.getevn("MYSQL_USER")
+        db_pass = os.getevn("MYSQL_PASSWORD")
+        db_name = os.getevn("MYSQL_DATABASE")
+        db_port = int(os.getevn("MYSQL_PORT", 3306))
     return mysql.connector.connect(
-        host=db_host,
-        user=db_user,
-        password=db_pass,
-        database=db_name,
-        port=db_port,
-        ssl_disabled=False  
+        host = db_host,
+        user = db_user,
+        password = db_pass,
+        database = db_name,
+        port = db_port,
+        ssl_disabled = False,
+        ssl_verify_cert = False,
+        ssl_verify_identity = False
     )
+    
 
 def execute_query(sql, params=None, fetch=True):
     with get_connection() as conn:
@@ -47,7 +47,7 @@ def execute_query(sql, params=None, fetch=True):
 
 def execute_procedure(proc_name, params=()):
     """
-    Hàm helper riêng để gọi Stored Procedure.
+    Hàm helper riêng để gọi Stored Procedure của TV2.
     Trả về True nếu thành công, raise Error nếu thất bại.
     """
     with get_connection() as conn:
@@ -55,31 +55,42 @@ def execute_procedure(proc_name, params=()):
             cursor.callproc(proc_name, params)
             conn.commit()
             return True
-
+        
 # ==============================================================================
 # CUSTOMER MANAGEMENT
 # ==============================================================================
+
 def get_or_create_customer(name, phone):
-    """Finds a customer by phone number, or creates a new one if they don't exist."""
-    
-    # 1. Check if the customer already exists
-    check_sql = "SELECT CustomerID FROM Customers WHERE PhoneNumber = %s"
-    existing_customer = execute_query(check_sql, (phone,))
-    
-    if existing_customer:
-        # Return the ID of the existing customer
-        return existing_customer[0]['CustomerID']
-    
-    # 2. If they don't exist, create them
-    insert_sql = "INSERT INTO Customers (CustomerName, PhoneNumber) VALUES (%s, %s)"
-    execute_query(insert_sql, (name, phone), fetch=False)
-    
-    # 3. Retrieve the newly generated ID
-    new_customer = execute_query(check_sql, (phone,))
-    return new_customer[0]['CustomerID']
+    """
+    Finds a customer by phone number, or creates a new one if they don't exist.
+    Returns CustomerID.
+    """
+    # 1. Check existing — dùng PhoneNumber gốc (clerk có SELECT trên Customers)
+    existing = execute_query(
+        "SELECT CustomerID FROM Customers WHERE PhoneNumber = %s",
+        (phone,)
+    )
+    if existing:
+        print(f"[OK] Customer found (ID: {existing[0]['CustomerID']})")
+        return existing[0]['CustomerID']
+
+    # 2. Insert mới — clerk có INSERT ON Customers
+    execute_query(
+        "INSERT INTO Customers (CustomerName, PhoneNumber) VALUES (%s, %s)",
+        (name, phone),
+        fetch=False
+    )
+
+    # 3. Lấy ID vừa tạo
+    new = execute_query(
+        "SELECT CustomerID FROM Customers WHERE PhoneNumber = %s",
+        (phone,)
+    )
+    print(f"[OK] New customer created: {name} (ID: {new[0]['CustomerID']})")
+    return new[0]['CustomerID']
 
 # ==============================================================================
-# SCREENING MANAGEMENT
+# SCREENING MANAGEMENT (RESTORED FOR STREAMLIT DROPDOWN)
 # ==============================================================================
 def get_available_screenings():
     """Fetches all screenings to populate the UI dropdown."""
@@ -160,3 +171,63 @@ def print_revenue_report():
     print("-"*75)
     print(f"{'TOTAL REVENUE':>63} {total:>10,} VND")
     print("="*75)
+    
+# ==============================================================================
+# LOGIN SYSTEM
+# ==============================================================================
+
+def login(username, password):
+    """
+    Authenticate user against MySQL users (admin_user / clerk_user).
+    Returns role string or None if failed.
+    """
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv("MYSQL_HOST", "localhost"),
+            user=username,
+            password=password,
+            database=os.getenv("MYSQL_DATABASE"),
+            port=int(os.getenv("MYSQL_PORT", 3306))
+        )
+        conn.close()
+
+        # Xác định role dựa vào username
+        if username == "admin_user":
+            return "admin"
+        elif username == "clerk_user":
+            return "clerk"
+        else:
+            return "clerk"  # default
+
+    except Error:
+        return None  # Sai username hoặc password
+
+
+def login_prompt():
+    """
+    Authenticates user by attempting a MySQL connection with their credentials.
+    Returns 'admin', 'clerk', or None if the login fails.
+    """
+    try:
+        # Attempt connection using the user's specific credentials
+        conn = mysql.connector.connect(
+            host=st.secrets.get("MYSQL_HOST", os.getenv("MYSQL_HOST", "localhost")),
+            user=username,
+            password=password,
+            database=st.secrets.get("MYSQL_DATABASE", os.getenv("MYSQL_DATABASE")),
+            port=int(st.secrets.get("MYSQL_PORT", os.getenv("MYSQL_PORT", 3306))),
+            ssl_disabled=False,
+            ssl_verify_cert=False,
+            ssl_verify_identity=False
+        )
+        conn.close() # Close immediately, we just needed to prove they can log in
+
+        # Assign role based on the username they provided
+        if username == "admin_user":
+            return "admin"
+        else:
+            return "clerk"
+
+    except Error:
+        # If MySQL rejects the username/password, return None
+        return None
