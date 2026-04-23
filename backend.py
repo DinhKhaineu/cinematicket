@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 import os
+import streamlit as st
 
 load_dotenv()
 
