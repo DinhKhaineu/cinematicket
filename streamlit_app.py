@@ -36,7 +36,7 @@ if not st.session_state["logged_in"]:
             st.session_state["role"] = role
             st.session_state["username"] = login_user.strip()
             st.success(f"Welcome, {role.capitalize()}!")
-            st.return()
+            st.rerun()
 
 # ------------------------------------------------------------------------------
 # MAIN APPLICATION (Only runs if logged in)
