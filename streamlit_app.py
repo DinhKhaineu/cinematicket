@@ -22,7 +22,7 @@ if not st.session_state["logged_in"]:
     st.title("Cinema Management Login")
 
     #Center the login box
-    col1, col2, col3 == st.columns([1,2,1])
+    col1, col2, col3 = st.columns([1,2,1])
     with col2:
         with st.form("login_form"):
             st.subheader("Enter Infor")
