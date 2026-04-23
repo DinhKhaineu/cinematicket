@@ -15,7 +15,7 @@ load_dotenv()
 def get_connection():
     try:
         db_host = st.secrets["MYSQL_HOST"]
-        db_user = st.secret["MYSQL_USER"]
+        db_user = st.secrets["MYSQL_USER"]
         db_pass = st.secrets["MYSQL_PASSWORD"]
         db_name = st.secrets["MYSQL_DATABASE"]
         db_port = int(st.secrets["MYSQL_PORT"])
