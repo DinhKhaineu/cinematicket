@@ -104,7 +104,7 @@ else:
             with col4:
                 row_col, seat_col = st.columns(2)
                 with row_col:
-                    row_name = st.text_input("Row (e.e., A, B)", max_chars = 1).upper()
+                    row_name = st.text_input("Row (e.g., A, B)", max_chars = 1).upper()
                 with seat_col: 
                     seat_number = st.number_input("Seat Number", min_value =1, step =1)
             #Submit button
